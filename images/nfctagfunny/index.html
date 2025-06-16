@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Auto Play Audio</title>
+<title>Auto Play Audio on GitHub Pages</title>
 <style>
   /* Hide audio element visually */
   audio {
@@ -15,18 +15,84 @@
     opacity: 0;
     pointer-events: none;
   }
+  /* Overlay prompt */
+  #enableSoundOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.5rem;
+    z-index: 1000;
+    user-select: none;
+  }
+  #enableSoundButton {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: #10b981;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  #enableSoundButton:hover,
+  #enableSoundButton:focus {
+    background: #059669;
+    outline: none;
+  }
 </style>
 </head>
 <body>
-<audio id="audioPlayer" autoplay loop playsinline>
+<audio id="audioPlayer" muted autoplay loop playsinline>
   <source src="1.mp3" type="audio/mpeg" />
   Your browser does not support the audio element.
 </audio>
+
+<div id="enableSoundOverlay" style="display:none;">
+  <div>Tap to enable sound</div>
+  <button id="enableSoundButton">Enable Sound</button>
+</div>
+
 <script>
   const audio = document.getElementById('audioPlayer');
-  audio.volume = 1.0;
-  audio.play().catch(e => {
-    console.warn('Autoplay failed:', e);
+  const overlay = document.getElementById('enableSoundOverlay');
+  const button = document.getElementById('enableSoundButton');
+
+  // Try to play audio and unmute if possible
+  function tryPlayAudio() {
+    audio.play().then(() => {
+      audio.muted = false;
+      audio.volume = 1.0;
+      overlay.style.display = 'none';
+    }).catch(() => {
+      overlay.style.display = 'flex';
+    });
+  }
+
+  // Initial attempt to play audio on page load
+  window.addEventListener('load', () => {
+    tryPlayAudio();
+  });
+
+  // On button click, play audio with sound
+  button.addEventListener('click', () => {
+    audio.muted = false;
+    audio.volume = 1.0;
+    audio.play().then(() => {
+      overlay.style.display = 'none';
+    }).catch((e) => {
+      // Could show error or keep overlay visible
+      console.warn('Play after user interaction failed:', e);
+    });
   });
 </script>
 </body>
