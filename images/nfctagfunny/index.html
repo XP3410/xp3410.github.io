@@ -3,97 +3,163 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Auto Play Audio on GitHub Pages</title>
+<title>chrome-error-audio</title>
 <style>
-  /* Hide audio element visually */
-  audio {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #fff;
+    color: #3c4043;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+                Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    user-select: none;
+    cursor: pointer;
   }
-  /* Overlay prompt */
-  #enableSoundOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.85);
-    color: #fff;
+  body {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-family: 'Inter', sans-serif;
-    font-size: 1.5rem;
-    z-index: 1000;
+    text-align: center;
+    padding: 0 24px;
+    line-height: 1.5;
+  }
+
+  .sad-face {
+    font-size: 96px;
+    color: #9aa0a6;
     user-select: none;
+    margin-bottom: 24px;
+    line-height: 1;
   }
-  #enableSoundButton {
-    margin-top: 20px;
-    padding: 12px 24px;
-    background: #10b981;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 1.25rem;
+
+  h1 {
+    font-weight: 700;
+    font-size: 36px;
+    color: #202124;
+    margin: 0 0 16px 0;
+  }
+
+  p.description {
+    font-weight: 400;
+    font-size: 18px;
+    color: #5f6368;
+    max-width: 440px;
+    margin: 0 0 12px 0;
+  }
+
+  p.error-code {
+    font-weight: 400;
+    font-size: 13px;
+    color: #80868b;
+    margin: 0 0 24px 0;
+    font-family: monospace, monospace;
+  }
+
+  .suggestion {
+    font-weight: 400;
+    font-size: 14px;
+    color: #3c4043;
+    max-width: 440px;
+    margin: 0;
+  }
+
+  a {
+    color: #1a73e8;
+    text-decoration: none;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.3s ease;
   }
-  #enableSoundButton:hover,
-  #enableSoundButton:focus {
-    background: #059669;
-    outline: none;
+  a:hover,
+  a:focus {
+    text-decoration: underline;
   }
+
+  /* Responsive small screens */
+  @media (max-width: 360px) {
+    h1 {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .sad-face {
+      font-size: 72px;
+      margin-bottom: 16px;
+    }
+  }
+
 </style>
 </head>
-<body>
-<audio id="audioPlayer" muted autoplay loop playsinline>
-  <source src="1.mp3" type="audio/mpeg" />
-  Your browser does not support the audio element.
-</audio>
-
-<div id="enableSoundOverlay" style="display:none;">
-  <div>Tap to enable sound</div>
-  <button id="enableSoundButton">Enable Sound</button>
-</div>
+<body aria-label="Chrome error page: This site can’t be reached. Click anywhere to play audio.">
+  <div class="sad-face" aria-hidden="true">😕</div>
+  <h1>This site can’t be reached</h1>
+  <p class="description">Check your internet connection</p>
+  <p class="error-code">ERR_INTERNET_DISCONNECTED</p>
+  <p class="suggestion">Try:
+    <a href="javascript:void(0)" id="reloadLink" tabindex="0" aria-label="Reload page">Reloading the page</a>,
+    <br />Checking the network cables, modem, and router,
+    <br />Reconnecting to Wi-Fi,
+    <br />Running Windows Network Diagnostics.
+  </p>
 
 <script>
-  const audio = document.getElementById('audioPlayer');
-  const overlay = document.getElementById('enableSoundOverlay');
-  const button = document.getElementById('enableSoundButton');
+  // Setup audio playback on any click anywhere on the page.
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  let sourceNode = null;
+  let gainNode = audioContext.createGain();
+  gainNode.gain.value = 5; // Amplify volume by 5x
+  gainNode.connect(audioContext.destination);
 
-  // Try to play audio and unmute if possible
-  function tryPlayAudio() {
-    audio.play().then(() => {
-      audio.muted = false;
-      audio.volume = 1.0;
-      overlay.style.display = 'none';
-    }).catch(() => {
-      overlay.style.display = 'flex';
-    });
+  // Load audio buffer function
+  async function loadAudio() {
+    try {
+      const response = await fetch('1.mp3');
+      const arrayBuffer = await response.arrayBuffer();
+      return await audioContext.decodeAudioData(arrayBuffer);
+    } catch (e) {
+      console.error('Audio load failed:', e);
+      return null;
+    }
   }
 
-  // Initial attempt to play audio on page load
-  window.addEventListener('load', () => {
-    tryPlayAudio();
-  });
+  // Play audio from buffer with 5x gain
+  async function playAudio() {
+    if (sourceNode !== null) {
+      sourceNode.stop();
+      sourceNode.disconnect();
+    }
+    const audioBuffer = await loadAudio();
+    if (!audioBuffer) {
+      return;
+    }
+    sourceNode = audioContext.createBufferSource();
+    sourceNode.buffer = audioBuffer;
+    sourceNode.loop = true;
+    sourceNode.connect(gainNode);
+    // On many browsers, AudioContext state is suspended until user interaction
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    sourceNode.start(0);
+  }
 
-  // On button click, play audio with sound
-  button.addEventListener('click', () => {
-    audio.muted = false;
-    audio.volume = 1.0;
-    audio.play().then(() => {
-      overlay.style.display = 'none';
-    }).catch((e) => {
-      // Could show error or keep overlay visible
-      console.warn('Play after user interaction failed:', e);
-    });
-  });
+  // Play audio on any interaction
+  function handleUserInteraction() {
+    playAudio();
+    // remove event listeners after first activation
+    window.removeEventListener('click', handleUserInteraction);
+    window.removeEventListener('keydown', handleUserInteraction);
+    window.removeEventListener('touchstart', handleUserInteraction);
+  }
+
+  window.addEventListener('click', handleUserInteraction);
+  window.addEventListener('keydown', handleUserInteraction);
+  window.addEventListener('touchstart', handleUserInteraction);
+
+  // The reload link triggers location.reload()
+  document.getElementById('reloadLink').addEventListener('click', () => location.reload());
+
 </script>
 </body>
 </html>
