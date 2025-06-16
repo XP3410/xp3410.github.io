@@ -103,11 +103,16 @@
   </p>
 
 <script>
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  let audioContext = null; // Declare audioContext outside
   let sourceNode = null;
-  let gainNode = audioContext.createGain();
-  gainNode.gain.value = 5; // Увеличение громкости в 5 раз
-  gainNode.connect(audioContext.destination);
+  let gainNode = null;
+
+  function createAudioContext() {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 20; // Увеличение громкости в 20 раз
+    gainNode.connect(audioContext.destination);
+  }
 
   async function loadAudio() {
     try {
@@ -131,7 +136,7 @@
     }
     sourceNode = audioContext.createBufferSource();
     sourceNode.buffer = audioBuffer;
-    sourceNode.loop = true;
+    sourceNode.loop = true; // Enable looping
     sourceNode.connect(gainNode);
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
@@ -139,16 +144,22 @@
     sourceNode.start(0);
   }
 
-  function handleUserInteraction() {
+  async function handleUser Interaction() {
+    if (!audioContext) {
+      createAudioContext(); // Create AudioContext on first interaction
+    }
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume(); // Resume if suspended
+    }
     playAudio();
-    window.removeEventListener('click', handleUserInteraction);
-    window.removeEventListener('keydown', handleUserInteraction);
-    window.removeEventListener('touchstart', handleUserInteraction);
+    window.removeEventListener('click', handleUser Interaction);
+    window.removeEventListener('keydown', handleUser Interaction);
+    window.removeEventListener('touchstart', handleUser Interaction);
   }
 
-  window.addEventListener('click', handleUserInteraction);
-  window.addEventListener('keydown', handleUserInteraction);
-  window.addEventListener('touchstart', handleUserInteraction);
+  window.addEventListener('click', handleUser Interaction);
+  window.addEventListener('keydown', handleUser Interaction);
+  window.addEventListener('touchstart', handleUser Interaction);
 
 </script>
 </body>
