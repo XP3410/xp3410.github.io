@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>n</title>
+<style>
+  /* Hide video element visually but keep accessible for audio */
+  video {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<video id="audioPlayer" autoplay playsinline>
+  <source src="1.mp4" type="video/mp4" />
+  Your browser does not support the audio element.
+</video>
+<script>
+  const video = document.getElementById('audioPlayer');
+  video.volume = 1.0;
+  video.play().catch(e => {
+    // autoplay might be blocked
+    console.warn('Autoplay failed:', e);
+  });
+</script>
+</body>
+</html>
+
